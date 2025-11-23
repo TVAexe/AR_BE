@@ -4,62 +4,62 @@ import java.time.Instant;
 import java.util.List;
 
 import com.example.AR_BE.utils.SecurityUtils;
-import com.example.AR_BE.utils.constants.GenderEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Setter;
 import lombok.Getter;
+import lombok.Setter;
 
-@Entity
-@Table(name = "users")
 @Getter
 @Setter
-public class User {
-
+@Entity
+@Table(name = "products")
+public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
-    @NotBlank(message = "Email khong duoc de trong")
-    private String email;
-    @NotBlank(message = "Password khong duoc de trong")
-    private String password;
 
-    private int age;
-    @Enumerated(EnumType.STRING)
-    private GenderEnum gender;
+    @NotBlank(message = "Product name khong duoc de trong")
+    private String name;
+    @NotBlank(message = "Product price khong duoc de trong")
+    private Double oldPrice;
+    private double saleRate;
+    private int quantity;
     @Column(columnDefinition = "MEDIUMTEXT")
-    private String refreshToken;
+    private String description;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
     private String updatedBy;
-    private String address;
-    @NotBlank(message = "Phone number khong duoc de trong")
-    private String phoneNumber;
+    
+    @ElementCollection
+    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
+    @Column(name = "image_url")
+    private List<String> imageUrl;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JsonIgnoreProperties(value = { "category_id" })
+    @JoinTable(name = "product_category", joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
+    private List<Category> categories;
+
+    @ManyToMany(mappedBy = "items", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Order> orders;
-
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
 
     @PrePersist
     public void handleCreate() {
@@ -76,5 +76,4 @@ public class User {
                 : "";
         this.updatedAt = Instant.now();
     }
-
 }

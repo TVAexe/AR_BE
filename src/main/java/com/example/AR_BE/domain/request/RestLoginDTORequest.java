@@ -7,8 +7,8 @@ import lombok.Setter;
 public class RestLoginDTORequest {
     @Getter
     @Setter
-    @NotBlank(message = "Username không được để trống")
-    private String username;
+    @NotBlank(message = "email không được để trống")
+    private String email;
 
     @Getter
     @Setter
