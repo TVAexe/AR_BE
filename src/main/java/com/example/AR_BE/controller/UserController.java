@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.AR_BE.domain.User;
+import com.example.AR_BE.domain.response.NewUserDTOResponse;
 import com.example.AR_BE.service.UserService;
 
 import jakarta.validation.Valid;
@@ -26,7 +27,7 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public ResponseEntity<User> createNewUser(@Valid @RequestBody User requestUser)
+    public ResponseEntity<NewUserDTOResponse> createNewUser(@Valid @RequestBody User requestUser)
             throws IdInvalidException {
         boolean isEmailExisted = this.userService.checkEmailExist(requestUser.getEmail());
         if (isEmailExisted) {
@@ -41,6 +42,6 @@ public class UserController {
         String hashedPassword = this.passwordEncoder.encode(requestUser.getPassword());
         requestUser.setPassword(hashedPassword);
         User newUser = this.userService.handleCreateUser(requestUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToNewUserDTOResponse(newUser));
     }
 }

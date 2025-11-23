@@ -3,6 +3,7 @@ package com.example.AR_BE.service;
 import org.springframework.stereotype.Service;
 
 import com.example.AR_BE.domain.User;
+import com.example.AR_BE.domain.response.NewUserDTOResponse;
 import com.example.AR_BE.repository.UserRepository;
 
 @Service
@@ -35,5 +36,15 @@ public class UserService {
             user.setRefreshToken(token);
             this.userRepository.save(user);
         }
+    }
+
+    public NewUserDTOResponse convertToNewUserDTOResponse(User user) {
+        NewUserDTOResponse newUserDTOResponse = new NewUserDTOResponse();
+        newUserDTOResponse.setId(user.getId());
+        newUserDTOResponse.setEmail(user.getEmail());
+        newUserDTOResponse.setName(user.getName());
+        newUserDTOResponse.setPhoneNumber(user.getPhoneNumber());
+        newUserDTOResponse.setCreatedAt(user.getCreatedAt());
+        return newUserDTOResponse;
     }
 }
