@@ -49,13 +49,13 @@ public class AuthController {
     public ResponseEntity<RestLoginDTOResponse> login(@Valid @RequestBody RestLoginDTORequest loginDTO) {
 
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
-                loginDTO.getUsername(), loginDTO.getPassword());
+                loginDTO.getEmail(), loginDTO.getPassword());
 
         Authentication authentication = authenticationManagerBuilder.getObject().authenticate(authenticationToken);
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
         RestLoginDTOResponse restLoginDTO = new RestLoginDTOResponse();
-        User userDB = userService.findUserByUsername(loginDTO.getUsername());
+        User userDB = userService.findUserByUsername(loginDTO.getEmail());
         RestLoginDTOResponse.UserLogin userLogin = new RestLoginDTOResponse.UserLogin(userDB.getId(), userDB.getEmail(),
                 userDB.getName());
         restLoginDTO.setUser(userLogin);

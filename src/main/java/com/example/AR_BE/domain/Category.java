@@ -4,62 +4,38 @@ import java.time.Instant;
 import java.util.List;
 
 import com.example.AR_BE.utils.SecurityUtils;
-import com.example.AR_BE.utils.constants.GenderEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
-import lombok.Setter;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import lombok.Getter;
+import lombok.Setter;
 
-@Entity
-@Table(name = "users")
 @Getter
 @Setter
-public class User {
-
+@Entity
+@Table(name = "categories")
+public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @NotBlank(message = "Category name khong duoc de trong")
     private String name;
-    @NotBlank(message = "Email khong duoc de trong")
-    private String email;
-    @NotBlank(message = "Password khong duoc de trong")
-    private String password;
-
-    private int age;
-    @Enumerated(EnumType.STRING)
-    private GenderEnum gender;
-    @Column(columnDefinition = "MEDIUMTEXT")
-    private String refreshToken;
     private Instant createdAt;
     private Instant updatedAt;
     private String createdBy;
     private String updatedBy;
-    private String address;
-    @NotBlank(message = "Phone number khong duoc de trong")
-    private String phoneNumber;
-
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "categories")
     @JsonIgnore
-    private List<Order> orders;
-
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
+    private List<Product> products;
 
     @PrePersist
     public void handleCreate() {
@@ -76,5 +52,4 @@ public class User {
                 : "";
         this.updatedAt = Instant.now();
     }
-
 }
