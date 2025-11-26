@@ -1,12 +1,12 @@
 package com.example.AR_BE.controller;
 
+import com.example.AR_BE.domain.request.UpdatePasswordDTORequest;
+import com.example.AR_BE.utils.SecurityUtils;
+import com.example.AR_BE.utils.annotation.ApiMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.example.AR_BE.domain.User;
 import com.example.AR_BE.domain.response.NewUserDTOResponse;
@@ -43,5 +43,23 @@ public class UserController {
         requestUser.setPassword(hashedPassword);
         User newUser = this.userService.handleCreateUser(requestUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToNewUserDTOResponse(newUser));
+    }
+
+    @DeleteMapping("/users/{id}")
+    @ApiMessage("Deleted User")
+    public ResponseEntity<Void> deleteUser(@PathVariable("id") long id) throws IdInvalidException {
+        User currentUser = this.userService.handleGetUser(id);
+        if (currentUser == null) {
+            throw new IdInvalidException("User voi id: " + id + " khong ton tai");
+        }
+        this.userService.handleDeleteUser(id);
+        return ResponseEntity.ok(null);
+    }
+
+    @PutMapping("/users/password")
+    public ResponseEntity<?> changePassword(@RequestBody UpdatePasswordDTORequest req) {
+        String email = SecurityUtils.getCurrentUserLogin().orElseThrow();
+        userService.changePasswordByEmail(email, req);
+        return ResponseEntity.ok("Password updated successfully");
     }
 }
