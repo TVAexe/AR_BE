@@ -1,17 +1,24 @@
 package com.example.AR_BE.service;
 
+import com.example.AR_BE.domain.request.UpdatePasswordDTORequest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.AR_BE.domain.User;
 import com.example.AR_BE.domain.response.NewUserDTOResponse;
 import com.example.AR_BE.repository.UserRepository;
 
+import java.util.Optional;
+
 @Service
 public class UserService {
     private final UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public User handleCreateUser(User user) {
@@ -46,5 +53,27 @@ public class UserService {
         newUserDTOResponse.setPhoneNumber(user.getPhoneNumber());
         newUserDTOResponse.setCreatedAt(user.getCreatedAt());
         return newUserDTOResponse;
+    }
+
+    public void handleDeleteUser(long id) {
+        this.userRepository.deleteById(id);
+    }
+
+    public User handleGetUser(long id) {
+        Optional<User> userOptional = this.userRepository.findById(id);
+        return userOptional.orElse(null);
+    }
+
+    public void changePasswordByEmail(String email, UpdatePasswordDTORequest req) {
+        User user = userRepository.findByEmail(email);
+        if (user == null) return;
+
+        if (req.getOldPassword() != null &&
+                !passwordEncoder.matches(req.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Wrong old password");
+        }
+
+        user.setPassword(passwordEncoder.encode(req.getNewPassword()));
+        userRepository.save(user);
     }
 }
