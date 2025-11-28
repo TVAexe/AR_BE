@@ -20,6 +20,10 @@ public class ProductService {
     private final ProductRepository productRepo;
     private final CategoryRepository categoryRepo;
 
+    public boolean existsById(Long id) {
+        return productRepo.existsById(id);
+    }
+
     // GET all
     public List<ProductDTO> getAll() {
         return productRepo.findAll().stream()
