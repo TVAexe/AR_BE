@@ -35,10 +35,7 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @NotBlank(message = "Product name khong duoc de trong")
     private String name;
-    @NotNull(message = "Product price khong duoc de trong")
     private Double oldPrice;
     private Double saleRate;
     private int quantity;
@@ -56,7 +53,7 @@ public class Product {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    @JsonIgnoreProperties("products")
+    @JsonIgnoreProperties({"products", "hibernateLazyInitializer", "handler"})
     private Category category;
 
     @ManyToMany(mappedBy = "items", fetch = FetchType.LAZY)

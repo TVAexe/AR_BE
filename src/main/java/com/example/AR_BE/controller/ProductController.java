@@ -1,10 +1,12 @@
 package com.example.AR_BE.controller;
 
-import com.example.AR_BE.domain.Product;
 import com.example.AR_BE.domain.dto.ProductDTO;
+import com.example.AR_BE.domain.request.CreateProductDTO;
+import com.example.AR_BE.domain.request.UpdateProductDTO;
 import com.example.AR_BE.service.ProductService;
-import com.example.AR_BE.utils.exception.IdInvalidException;
-import org.springframework.http.HttpStatus;
+import com.example.AR_BE.utils.annotation.ApiMessage;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,53 +14,40 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/products")
+@RequiredArgsConstructor
 public class ProductController {
 
     private final ProductService productService;
 
-    public ProductController(ProductService productService) {
-        this.productService = productService;
-    }
-
     @GetMapping
-    public ResponseEntity<List<ProductDTO>> getAllProducts() {
-        List<ProductDTO> products = productService.getAllProducts();
-        return ResponseEntity.ok(products);
+    public ResponseEntity<List<ProductDTO>> getAll() {
+        return ResponseEntity.ok(productService.getAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) throws IdInvalidException {
-        ProductDTO product = productService.getProductById(id);
-        if (product == null) {
-            throw new IdInvalidException("Product with id " + id + " does not exist");
-        }
-        return ResponseEntity.ok(product);
+    public ResponseEntity<ProductDTO> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getById(id));
     }
 
     @PostMapping
-    public ResponseEntity<ProductDTO> createProduct(@RequestBody Product product) {
-        ProductDTO createdProduct = productService.createProduct(product);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdProduct);
+    @ApiMessage("Product created successfully")
+    public ResponseEntity<ProductDTO> create(
+            @Valid @RequestBody CreateProductDTO req) {
+        return ResponseEntity.ok(productService.create(req));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ProductDTO> updateProduct(@PathVariable Long id, @RequestBody Product product) throws IdInvalidException {
-        ProductDTO existingProduct = productService.getProductById(id);
-        if (existingProduct == null) {
-            throw new IdInvalidException("Product with id " + id + " does not exist");
-        }
-        ProductDTO updatedProduct = productService.updateProduct(id, product);
-        return ResponseEntity.ok(updatedProduct);
+    @ApiMessage("Product updated successfully")
+    public ResponseEntity<ProductDTO> update(
+            @PathVariable Long id,
+            @RequestBody UpdateProductDTO req) {
+        return ResponseEntity.ok(productService.update(id, req));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteProduct(@PathVariable Long id) throws IdInvalidException {
-        ProductDTO existingProduct = productService.getProductById(id);
-        if (existingProduct == null) {
-            throw new IdInvalidException("Product with id " + id + " does not exist");
-        }
-        productService.deleteProduct(id);
-        return ResponseEntity.ok("Product deleted successfully");
+    @ApiMessage("Product deleted successfully")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        productService.delete(id);
+        return ResponseEntity.ok().build();
     }
-
 }
