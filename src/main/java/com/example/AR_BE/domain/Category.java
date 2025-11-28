@@ -13,7 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToMany;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
@@ -33,13 +33,13 @@ public class Category {
     private Instant updatedAt;
     private String createdBy;
     private String updatedBy;
-    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "categories")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "category")
     @JsonIgnore
     private List<Product> products;
 
     @PrePersist
     public void handleCreate() {
-        this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent() == true
+        this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent()
                 ? SecurityUtils.getCurrentUserLogin().get()
                 : "";
         this.createdAt = Instant.now();
@@ -47,7 +47,7 @@ public class Category {
 
     @PreUpdate
     public void handleUpdate() {
-        this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent() == true
+        this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent()
                 ? SecurityUtils.getCurrentUserLogin().get()
                 : "";
         this.updatedAt = Instant.now();

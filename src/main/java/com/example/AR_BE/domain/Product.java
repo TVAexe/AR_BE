@@ -18,10 +18,12 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -36,9 +38,9 @@ public class Product {
 
     @NotBlank(message = "Product name khong duoc de trong")
     private String name;
-    @NotBlank(message = "Product price khong duoc de trong")
+    @NotNull(message = "Product price khong duoc de trong")
     private Double oldPrice;
-    private double saleRate;
+    private Double saleRate;
     private int quantity;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String description;
@@ -52,10 +54,10 @@ public class Product {
     @Column(name = "image_url")
     private List<String> imageUrl;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JsonIgnoreProperties(value = { "category_id" })
-    @JoinTable(name = "product_category", joinColumns = @JoinColumn(name = "product_id"), inverseJoinColumns = @JoinColumn(name = "category_id"))
-    private List<Category> categories;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id")
+    @JsonIgnoreProperties("products")
+    private Category category;
 
     @ManyToMany(mappedBy = "items", fetch = FetchType.LAZY)
     @JsonIgnore
@@ -63,7 +65,7 @@ public class Product {
 
     @PrePersist
     public void handleCreate() {
-        this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent() == true
+        this.createdBy = SecurityUtils.getCurrentUserLogin().isPresent()
                 ? SecurityUtils.getCurrentUserLogin().get()
                 : "";
         this.createdAt = Instant.now();
@@ -71,7 +73,7 @@ public class Product {
 
     @PreUpdate
     public void handleUpdate() {
-        this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent() == true
+        this.updatedBy = SecurityUtils.getCurrentUserLogin().isPresent()
                 ? SecurityUtils.getCurrentUserLogin().get()
                 : "";
         this.updatedAt = Instant.now();
