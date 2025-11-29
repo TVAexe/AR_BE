@@ -44,7 +44,7 @@ public class GlobalException {
     }
 
     @ExceptionHandler(value = {
-        NoResourceFoundException.class
+            NoResourceFoundException.class
     })
     public ResponseEntity<RestResponse<Object>> handleNoResultException(Exception exception) {
         RestResponse<Object> restResponse = new RestResponse<Object>();
