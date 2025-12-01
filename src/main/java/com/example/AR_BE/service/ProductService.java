@@ -9,9 +9,15 @@ import com.example.AR_BE.domain.request.UpdateProductDTO;
 import com.example.AR_BE.repository.CategoryRepository;
 import com.example.AR_BE.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import com.example.AR_BE.domain.response.ResultPaginationDTO;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,6 +35,39 @@ public class ProductService {
         return productRepo.findAll().stream()
                 .map(this::toDTO)
                 .toList();
+    }
+
+    public ResultPaginationDTO getProducts(int page, int pageSize, String search, Long categoryId) {
+        PageRequest pageRequest = PageRequest.of(page - 1, pageSize, Sort.by("id").descending());
+
+        Specification<Product> spec = (root, query, cb) -> {
+            var predicate = cb.conjunction();
+            if (search != null && !search.isEmpty()) {
+                predicate = cb.and(predicate, cb.like(cb.lower(root.get("name")), "%" + search.toLowerCase() + "%"));
+            }
+            if (categoryId != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("category").get("id"), categoryId));
+            }
+            return predicate;
+        };
+
+        Page<Product> productPage = productRepo.findAll(spec, pageRequest);
+
+        List<ProductDTO> productDTOs = productPage.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(page);
+        meta.setPageSize(pageSize);
+        meta.setPages(productPage.getTotalPages());
+        meta.setTotal(productPage.getTotalElements());
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        result.setMeta(meta);
+        result.setResult(productDTOs);
+
+        return result;
     }
 
     // GET by ID
@@ -66,7 +105,9 @@ public class ProductService {
         if (req.getSaleRate() != null) p.setSaleRate(req.getSaleRate());
         if (req.getQuantity() != null) p.setQuantity(req.getQuantity());
         if (req.getDescription() != null) p.setDescription(req.getDescription());
-        if (req.getImageUrl() != null) p.setImageUrl(req.getImageUrl());
+        if (req.getImageUrl() != null && !req.getImageUrl().isEmpty()) {
+            p.setImageUrl(req.getImageUrl());
+        }
 
         if (req.getCategoryId() != null) {
             Category category = categoryRepo.findById(req.getCategoryId())
