@@ -35,9 +35,11 @@ public class ProductController {
     @GetMapping("/products")
     public ResponseEntity<ResultPaginationDTO> getProducts(
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int pageSize
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long categoryId
     ) {
-        ResultPaginationDTO result = productService.getProducts(page, pageSize);
+        ResultPaginationDTO result = productService.getProducts(page, pageSize, search, categoryId);
         return ResponseEntity.ok(result);
     }
 

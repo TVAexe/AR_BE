@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import com.example.AR_BE.domain.response.ResultPaginationDTO;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,9 +37,21 @@ public class ProductService {
                 .toList();
     }
 
-    public ResultPaginationDTO getProducts(int page, int pageSize) {
+    public ResultPaginationDTO getProducts(int page, int pageSize, String search, Long categoryId) {
         PageRequest pageRequest = PageRequest.of(page - 1, pageSize, Sort.by("id").descending());
-        Page<Product> productPage = productRepo.findAll(pageRequest);
+
+        Specification<Product> spec = (root, query, cb) -> {
+            var predicate = cb.conjunction();
+            if (search != null && !search.isEmpty()) {
+                predicate = cb.and(predicate, cb.like(cb.lower(root.get("name")), "%" + search.toLowerCase() + "%"));
+            }
+            if (categoryId != null) {
+                predicate = cb.and(predicate, cb.equal(root.get("category").get("id"), categoryId));
+            }
+            return predicate;
+        };
+
+        Page<Product> productPage = productRepo.findAll(spec, pageRequest);
 
         List<ProductDTO> productDTOs = productPage.getContent().stream()
                 .map(this::toDTO)
@@ -57,7 +69,6 @@ public class ProductService {
 
         return result;
     }
-
 
     // GET by ID
     public ProductDTO getById(Long id) {
