@@ -3,6 +3,7 @@ package com.example.AR_BE.controller;
 import com.example.AR_BE.domain.dto.ProductDTO;
 import com.example.AR_BE.domain.request.CreateProductDTO;
 import com.example.AR_BE.domain.request.UpdateProductDTO;
+import com.example.AR_BE.domain.response.ResultPaginationDTO;
 import com.example.AR_BE.service.ProductService;
 import com.example.AR_BE.utils.exception.IdInvalidException;
 import com.example.AR_BE.utils.annotation.ApiMessage;
@@ -25,10 +26,19 @@ public class ProductController {
         this.productService = productService;
     }
 
+//    @GetMapping("/products")
+//    public ResponseEntity<List<ProductDTO>> getAllProducts() {
+//        List<ProductDTO> products = productService.getAll();
+//        return ResponseEntity.ok(products);
+//    }
+
     @GetMapping("/products")
-    public ResponseEntity<List<ProductDTO>> getAllProducts() {
-        List<ProductDTO> products = productService.getAll();
-        return ResponseEntity.ok(products);
+    public ResponseEntity<ResultPaginationDTO> getProducts(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize
+    ) {
+        ResultPaginationDTO result = productService.getProducts(page, pageSize);
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/products/{id}")

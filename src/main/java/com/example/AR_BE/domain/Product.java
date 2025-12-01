@@ -38,7 +38,7 @@ public class Product {
     private String name;
     private Double oldPrice;
     private Double saleRate;
-    private int quantity;
+    private Integer quantity;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String description;
     private Instant createdAt;
