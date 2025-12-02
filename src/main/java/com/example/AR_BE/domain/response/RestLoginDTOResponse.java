@@ -1,6 +1,7 @@
 package com.example.AR_BE.domain.response;
 
 
+import com.example.AR_BE.domain.Role;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,6 +24,7 @@ public class RestLoginDTOResponse {
         private long id;
         private String email;
         private String name;
+        private Role role;
     }
 
     @Getter

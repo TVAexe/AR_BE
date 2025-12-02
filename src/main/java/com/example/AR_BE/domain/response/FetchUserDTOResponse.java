@@ -9,21 +9,13 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class NewUserDTOResponse {
+@AllArgsConstructor
+@NoArgsConstructor
+public class FetchUserDTOResponse {
     private Long id;
     private String email;
     private String name;
     private String phoneNumber;
     private Instant createdAt;
-    private RoleUser role;
-
-    @Getter
-    @Setter
-    @AllArgsConstructor
-    @NoArgsConstructor
-    public static class RoleUser {
-        private long id;
-        private String name;
-    }
-
+    private Instant updatedAt;
 }
