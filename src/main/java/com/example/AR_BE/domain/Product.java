@@ -19,6 +19,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -45,7 +46,7 @@ public class Product {
     private Instant updatedAt;
     private String createdBy;
     private String updatedBy;
-    
+
     @ElementCollection
     @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
     @Column(name = "image_url")
@@ -56,9 +57,8 @@ public class Product {
     @JsonIgnoreProperties({"products", "hibernateLazyInitializer", "handler"})
     private Category category;
 
-    @ManyToMany(mappedBy = "items", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private List<Order> orders;
+    @OneToMany(mappedBy = "product")
+    private List<OrderItem> items;
 
     @PrePersist
     public void handleCreate() {

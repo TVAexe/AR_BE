@@ -8,6 +8,8 @@ import com.example.AR_BE.domain.request.CreateProductDTO;
 import com.example.AR_BE.domain.request.UpdateProductDTO;
 import com.example.AR_BE.repository.CategoryRepository;
 import com.example.AR_BE.repository.ProductRepository;
+
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -161,5 +163,27 @@ public class ProductService {
                 p.getUpdatedBy(),
                 p.getImageUrl(),
                 categoryDTO);
+    }
+
+    public Product getAndValidateProduct(Long productId, int qty) {
+        Product p = productRepo.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+
+        if (p.getQuantity() < qty) {
+            throw new RuntimeException("Not enough stock for product " + productId);
+        }
+
+        return p;
+    }
+
+    public void deductStock(Product p, int quantity) {
+        p.setQuantity(p.getQuantity() - quantity);
+        productRepo.save(p);
+    }
+
+    @Transactional
+    public void increaseStock(Product product, int quantity) {
+        product.setQuantity(product.getQuantity() + quantity);
+        productRepo.save(product);
     }
 }
