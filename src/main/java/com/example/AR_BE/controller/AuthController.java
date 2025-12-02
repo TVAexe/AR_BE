@@ -6,7 +6,6 @@ import com.example.AR_BE.domain.User;
 import com.example.AR_BE.domain.request.RestLoginDTORequest;
 import com.example.AR_BE.domain.response.NewUserDTOResponse;
 import com.example.AR_BE.domain.response.RestLoginDTOResponse;
-import com.example.AR_BE.domain.response.RestLoginDTOResponse.UserLogin;
 import com.example.AR_BE.service.UserService;
 
 import jakarta.validation.Valid;
@@ -57,7 +56,7 @@ public class AuthController {
         RestLoginDTOResponse restLoginDTO = new RestLoginDTOResponse();
         User userDB = userService.findUserByUsername(loginDTO.getEmail());
         RestLoginDTOResponse.UserLogin userLogin = new RestLoginDTOResponse.UserLogin(userDB.getId(), userDB.getEmail(),
-                userDB.getName());
+                userDB.getName(),userDB.getRole());
         restLoginDTO.setUser(userLogin);
         String accessToken = this.securityUtils.createAccessToken(authentication, restLoginDTO.getUser());
         restLoginDTO.setAccessToken(accessToken);
@@ -73,7 +72,7 @@ public class AuthController {
         String email = SecurityUtils.getCurrentUserLogin().isPresent() ? SecurityUtils.getCurrentUserLogin().get() : "";
         User userDB = userService.findUserByUsername(email);
         RestLoginDTOResponse.UserLogin userLogin = new RestLoginDTOResponse.UserLogin(userDB.getId(), userDB.getEmail(),
-                userDB.getName());
+                userDB.getName(), userDB.getRole());
         return ResponseEntity.ok().body(userLogin);
     }
 
