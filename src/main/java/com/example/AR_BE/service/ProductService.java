@@ -15,7 +15,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import com.example.AR_BE.domain.response.ResultPaginationDTO;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.web.multipart.MultipartFile;
+import com.example.AR_BE.service.FileService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,6 +28,7 @@ public class ProductService {
 
     private final ProductRepository productRepo;
     private final CategoryRepository categoryRepo;
+    private final FileService fileService;
 
     public boolean existsById(Long id) {
         return productRepo.existsById(id);
@@ -88,7 +92,21 @@ public class ProductService {
         p.setSaleRate(req.getSaleRate());
         p.setQuantity(req.getQuantity());
         p.setDescription(req.getDescription());
-        p.setImageUrl(req.getImageUrl());
+
+        List<String> urls = new ArrayList<>();
+
+        if (req.getImages() != null) {
+            for (MultipartFile file : req.getImages()) {
+                try {
+                    String fileName = fileService.uploadFile(file);
+                    String fileUrl = fileService.getFileUrl(fileName);
+                    urls.add(fileUrl);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to upload image: " + e.getMessage());
+                }
+            }
+        }
+        p.setImageUrl(urls);
         p.setCategory(category);
 
         productRepo.save(p);
@@ -108,7 +126,7 @@ public class ProductService {
         if (req.getImageUrl() != null && !req.getImageUrl().isEmpty()) {
             p.setImageUrl(req.getImageUrl());
         }
-
+        
         if (req.getCategoryId() != null) {
             Category category = categoryRepo.findById(req.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -128,8 +146,7 @@ public class ProductService {
     private ProductDTO toDTO(Product p) {
         CategoryDTO categoryDTO = new CategoryDTO(
                 p.getCategory().getId(),
-                p.getCategory().getName()
-        );
+                p.getCategory().getName());
 
         return new ProductDTO(
                 p.getId(),
@@ -143,7 +160,6 @@ public class ProductService {
                 p.getCreatedBy(),
                 p.getUpdatedBy(),
                 p.getImageUrl(),
-                categoryDTO
-        );
+                categoryDTO);
     }
 }
