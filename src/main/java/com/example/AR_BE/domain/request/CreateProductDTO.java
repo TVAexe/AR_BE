@@ -1,6 +1,9 @@
 package com.example.AR_BE.domain.request;
 
 import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -20,7 +23,7 @@ public class CreateProductDTO {
 
     private String description;
 
-    private List<String> imageUrl;
+    private MultipartFile[] images;
 
     @NotNull(message = "Category không được để trống")
     private Long categoryId;
