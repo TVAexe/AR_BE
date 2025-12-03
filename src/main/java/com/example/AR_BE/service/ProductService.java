@@ -120,15 +120,20 @@ public class ProductService {
         Product p = productRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        if (req.getName() != null) p.setName(req.getName());
-        if (req.getOldPrice() != null) p.setOldPrice(req.getOldPrice());
-        if (req.getSaleRate() != null) p.setSaleRate(req.getSaleRate());
-        if (req.getQuantity() != null) p.setQuantity(req.getQuantity());
-        if (req.getDescription() != null) p.setDescription(req.getDescription());
+        if (req.getName() != null)
+            p.setName(req.getName());
+        if (req.getOldPrice() != null)
+            p.setOldPrice(req.getOldPrice());
+        if (req.getSaleRate() != null)
+            p.setSaleRate(req.getSaleRate());
+        if (req.getQuantity() != null)
+            p.setQuantity(req.getQuantity());
+        if (req.getDescription() != null)
+            p.setDescription(req.getDescription());
         if (req.getImageUrl() != null && !req.getImageUrl().isEmpty()) {
             p.setImageUrl(req.getImageUrl());
         }
-        
+
         if (req.getCategoryId() != null) {
             Category category = categoryRepo.findById(req.getCategoryId())
                     .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -185,5 +190,34 @@ public class ProductService {
     public void increaseStock(Product product, int quantity) {
         product.setQuantity(product.getQuantity() + quantity);
         productRepo.save(product);
+    }
+
+    public ResultPaginationDTO getProductsWithCategory(int page, int size, Long categoryId) {
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("id").ascending());
+
+        Specification<Product> spec = (root, query, cb) -> {
+            if (categoryId != null) {
+                return cb.equal(root.get("category").get("id"), categoryId);
+            }
+            return cb.conjunction();
+        };
+
+        Page<Product> pageProduct = productRepo.findAll(spec, pageRequest);
+
+        List<ProductDTO> productDTOs = pageProduct.getContent().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(page + 1);
+        meta.setPageSize(size);
+        meta.setPages(pageProduct.getTotalPages());
+        meta.setTotal(pageProduct.getTotalElements());
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        result.setMeta(meta);
+        result.setResult(productDTOs);
+
+        return result;
     }
 }
