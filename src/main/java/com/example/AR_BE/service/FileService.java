@@ -58,4 +58,17 @@ public class FileService {
     private String generateFileName(String originalFilename) {
         return UUID.randomUUID().toString() + "_" + originalFilename;
     }
+
+    public void deleteFileByUrl(String fileUrl) {
+        String key = extractKeyFromUrl(fileUrl);
+        deleteFile(key);
+    }
+
+    private String extractKeyFromUrl(String fileUrl) {
+        var uri = java.net.URI.create(fileUrl);
+        // URL dạng https://{bucket}.s3.{region}.amazonaws.com/{key}
+        String path = uri.getPath(); // "/d7732553-00d9-4290-9863-43ef60ded09b_sofa1.jpg"
+        if (path.startsWith("/")) path = path.substring(1);
+        return path;
+    }
 }

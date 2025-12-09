@@ -111,6 +111,7 @@ public class UserService {
             currentUser.setAddress(user.getAddress());
             currentUser.setAge(user.getAge());
             currentUser.setGender(user.getGender());
+            currentUser.setPhoneNumber(user.getPhoneNumber());
 
             if (user.getRole() != null) {
                 Role role = this.roleService.fetchById(user.getRole().getId());
