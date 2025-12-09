@@ -145,8 +145,23 @@ public class ProductService {
     }
 
     // DELETE
+    @Transactional
     public void delete(Long id) {
+        Product p = productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        List<String> imageUrls = p.getImageUrl();
+        // / Xóa product khỏi DB trước
         productRepo.deleteById(id);
+        // Sau đó xóa ảnh trên S3 (ngoài transaction)
+        if (imageUrls != null && !imageUrls.isEmpty()) {
+            for (String imageUrl : imageUrls) {
+                try {
+                    fileService.deleteFileByUrl(imageUrl);
+                } catch (Exception e) {
+                    System.err.println("Failed to delete image from S3: " + imageUrl + " - " + e.getMessage());
+                }
+            }
+        }
     }
 
     // Convert Entity -> DTO
