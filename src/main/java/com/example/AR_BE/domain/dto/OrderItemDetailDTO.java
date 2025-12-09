@@ -11,6 +11,7 @@ public class OrderItemDetailDTO {
     private String productType;
     private Integer quantity;
     private Double priceAtPurchase;
+    private Double oldPrice;
     private String imageUrl;
 }
 

@@ -54,10 +54,11 @@ public class Product {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
-    @JsonIgnoreProperties({"products", "hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({ "products", "hibernateLazyInitializer", "handler" })
     private Category category;
 
     @OneToMany(mappedBy = "product")
+    @JsonIgnore
     private List<OrderItem> items;
 
     @PrePersist
