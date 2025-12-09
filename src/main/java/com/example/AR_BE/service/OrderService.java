@@ -257,6 +257,12 @@ public class OrderService {
         dto.setTotalAmount(order.getTotalAmount());
         dto.setStatus(order.getStatus().name());
 
+        // Set created / updated info
+        dto.setCreatedAt(order.getCreatedAt());
+        dto.setUpdatedAt(order.getUpdatedAt());
+        dto.setCreatedBy(order.getCreatedBy());
+        dto.setUpdatedBy(order.getUpdatedBy());
+
         List<OrderItemDetailDTO> itemDtos = order.getOrderItems().stream()
                 .map(this::convertItemToDetailDTO)
                 .collect(Collectors.toList());
@@ -275,6 +281,7 @@ public class OrderService {
         dto.setProductType(item.getProductType());
         dto.setQuantity(item.getQuantity());
         dto.setPriceAtPurchase(item.getPriceAtPurchase());
+        dto.setOldPrice(p.getOldPrice());
 
         // Lấy 1 URL ảnh đầu tiên từ DB
         String imageUrl = null;
