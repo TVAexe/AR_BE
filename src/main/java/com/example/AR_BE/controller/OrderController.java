@@ -1,19 +1,15 @@
 package com.example.AR_BE.controller;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.AR_BE.domain.dto.OrderDTO;
 import com.example.AR_BE.domain.dto.OrderDetailDTO;
 import com.example.AR_BE.domain.request.CreateOrderRequest;
+import com.example.AR_BE.domain.request.UpdateOrderStatusRequest;
 import com.example.AR_BE.domain.response.ResultPaginationDTO;
 import com.example.AR_BE.domain.Order;
 import com.example.AR_BE.service.OrderService;
-import com.example.AR_BE.utils.constants.StatusEnum;
+import com.example.AR_BE.utils.annotation.ApiMessage;
 
 import lombok.RequiredArgsConstructor;
 
@@ -58,6 +54,47 @@ public class OrderController {
 
         OrderDetailDTO dto = orderService.getOrderDetail(orderId);
         return ResponseEntity.ok(dto);
+    }
+
+
+    @GetMapping("/orders/my-orders")
+    public ResponseEntity<ResultPaginationDTO> getMyOrders(
+            @RequestParam String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        ResultPaginationDTO result = orderService.getMyOrdersByStatus(status, page, size);
+        return ResponseEntity.ok(result);
+    }
+
+    // API cho ADMIN - xem tất cả đơn hàng
+    @GetMapping("/orders/admin/all-orders")
+    public ResponseEntity<ResultPaginationDTO> getAllOrdersForAdmin(
+            @RequestParam(required = false) String status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+
+        ResultPaginationDTO result = orderService.getAllOrdersByStatusForAdmin(status, page, size);
+        return ResponseEntity.ok(result);
+    }
+
+
+    // API cho USER - Hủy đơn của chính mình (chỉ khi PENDING)
+    @PutMapping("/orders/my-order/{orderId}/cancel")
+    @ApiMessage("Order cancelled successfully")
+    public ResponseEntity<OrderDTO> cancelMyOrder(@PathVariable Long orderId) {
+        OrderDTO canceledOrder = orderService.cancelMyOrder(orderId);
+        return ResponseEntity.ok(canceledOrder);
+    }
+
+    // API cho ADMIN - Cập nhật status của bất kỳ đơn nào
+    @PutMapping("/orders/admin/{orderId}/status")
+    @ApiMessage("Order status updated successfully")
+    public ResponseEntity<OrderDTO> updateOrderStatus(
+            @PathVariable Long orderId,
+            @RequestBody UpdateOrderStatusRequest request) {
+        OrderDTO updatedOrder = orderService.updateOrderStatus(orderId, request.getStatus());
+        return ResponseEntity.ok(updatedOrder);
     }
 
 }
