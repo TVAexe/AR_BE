@@ -56,7 +56,7 @@ public class AuthController {
         RestLoginDTOResponse restLoginDTO = new RestLoginDTOResponse();
         User userDB = userService.findUserByUsername(loginDTO.getEmail());
         RestLoginDTOResponse.UserLogin userLogin = new RestLoginDTOResponse.UserLogin(userDB.getId(), userDB.getEmail(),
-                userDB.getName(),userDB.getRole());
+                userDB.getName(), userDB.getRole(), userDB.getPhoneNumber());
         restLoginDTO.setUser(userLogin);
         String accessToken = this.securityUtils.createAccessToken(authentication, restLoginDTO.getUser());
         restLoginDTO.setAccessToken(accessToken);
@@ -72,7 +72,7 @@ public class AuthController {
         String email = SecurityUtils.getCurrentUserLogin().isPresent() ? SecurityUtils.getCurrentUserLogin().get() : "";
         User userDB = userService.findUserByUsername(email);
         RestLoginDTOResponse.UserLogin userLogin = new RestLoginDTOResponse.UserLogin(userDB.getId(), userDB.getEmail(),
-                userDB.getName(), userDB.getRole());
+                userDB.getName(), userDB.getRole(), userDB.getPhoneNumber());
         return ResponseEntity.ok().body(userLogin);
     }
 
