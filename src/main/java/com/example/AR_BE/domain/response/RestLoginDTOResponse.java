@@ -25,6 +25,7 @@ public class RestLoginDTOResponse {
         private String email;
         private String name;
         private Role role;
+        private String phoneNumber;
     }
 
     @Getter
