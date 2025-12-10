@@ -318,4 +318,232 @@ public class OrderService {
         dto.setItems(items);
         return dto;
     }
+
+
+    public ResultPaginationDTO getMyOrdersByStatus(
+            String status,
+            int page,
+            int size) {
+
+        // 1. Lấy user từ token
+        String username = SecurityUtils.getCurrentUserLogin()
+                .orElseThrow(() -> new RuntimeException("User not logged in"));
+
+        User currentUser = userRepository.findByEmail(username);
+        if (currentUser == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // 2. Validate status
+        StatusEnum statusEnum;
+        try {
+            statusEnum = StatusEnum.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid status: " + status);
+        }
+
+        // 3. Pageable sort theo createdAt DESC
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        // 4. Lấy đơn của USER này theo status
+        Page<Order> pageData = orderRepository.findByUserIdAndStatus(
+                currentUser.getId(), statusEnum, pageable);
+
+        // 5. Convert sang DTO
+        Page<OrderDetailDTO> dtoPage = pageData.map(this::convertToOrderDetailDTO);
+
+        // 6. Build Response
+        return buildPaginationResult(dtoPage);
+    }
+
+    public ResultPaginationDTO getAllOrdersByStatusForAdmin(
+            String status,
+            int page,
+            int size) {
+
+        // 1. Lấy user từ token và check role
+        String username = SecurityUtils.getCurrentUserLogin()
+                .orElseThrow(() -> new RuntimeException("User not logged in"));
+
+        User currentUser = userRepository.findByEmail(username);
+        if (currentUser == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // 2. Check role ADMIN
+        RoleEnum role = RoleEnum.valueOf(currentUser.getRole().getName().toUpperCase());
+        if (role != RoleEnum.ADMIN) {
+            throw new IdInvalidException("Only ADMIN can access all orders");
+        }
+
+        // 3. Pageable sort theo createdAt DESC
+        Pageable pageable = PageRequest.of(page, size,
+                Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<Order> pageData;
+
+        // 4. Nếu status == null hoặc empty → lấy TẤT CẢ
+        if (status == null || status.trim().isEmpty()) {
+            pageData = orderRepository.findAll(pageable);
+        } else {
+            // 5. Nếu có status → validate và filter theo status
+            StatusEnum statusEnum;
+            try {
+                statusEnum = StatusEnum.valueOf(status.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid status: " + status);
+            }
+            pageData = orderRepository.findByStatus(statusEnum, pageable);
+        }
+
+        // 6. Convert sang DTO
+        Page<OrderDetailDTO> dtoPage = pageData.map(this::convertToOrderDetailDTO);
+
+        // 7. Build Response
+        return buildPaginationResult(dtoPage);
+    }
+
+    private ResultPaginationDTO buildPaginationResult(Page<OrderDetailDTO> dtoPage) {
+        ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+        meta.setPage(dtoPage.getNumber());
+        meta.setPageSize(dtoPage.getSize());
+        meta.setPages(dtoPage.getTotalPages());
+        meta.setTotal(dtoPage.getTotalElements());
+
+        ResultPaginationDTO result = new ResultPaginationDTO();
+        result.setMeta(meta);
+        result.setResult(dtoPage.getContent());
+
+        return result;
+    }
+
+
+    @Transactional
+    public OrderDTO cancelMyOrder(Long orderId) {
+        // 1. Lấy user hiện tại từ token
+        String username = SecurityUtils.getCurrentUserLogin()
+                .orElseThrow(() -> new RuntimeException("User not logged in"));
+        User user = userRepository.findByEmail(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        // 2. Lấy order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IdInvalidException("Order ID " + orderId + " không tồn tại"));
+
+        // 3. Kiểm tra quyền: USER chỉ thao tác trên đơn của mình
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new IdInvalidException("Bạn không có quyền hủy đơn hàng này");
+        }
+
+        // 4. Kiểm tra trạng thái: USER chỉ hủy được khi PENDING
+        if (order.getStatus() != StatusEnum.PENDING) {
+            throw new IdInvalidException("Chỉ có thể hủy đơn hàng khi trạng thái là PENDING");
+        }
+
+        // 5. Nếu đã CANCELLED rồi → trả luôn
+        if (order.getStatus() == StatusEnum.CANCELLED) {
+            return convertToDTO(order);
+        }
+
+        // 6. Set trạng thái CANCELLED
+        order.setStatus(StatusEnum.CANCELLED);
+        orderRepository.save(order);
+
+        // 7. Hoàn lại stock
+        order.getOrderItems().forEach(item -> {
+            productService.increaseStock(item.getProduct(), item.getQuantity());
+        });
+
+        return convertToDTO(order);
+    }
+
+    @Transactional
+    public OrderDTO updateOrderStatus(Long orderId, String newStatus) {
+
+        // 1. Lấy user và check role ADMIN
+        String username = SecurityUtils.getCurrentUserLogin()
+                .orElseThrow(() -> new RuntimeException("User not logged in"));
+        User user = userRepository.findByEmail(username);
+        if (user == null) {
+            throw new RuntimeException("User not found");
+        }
+
+        RoleEnum role = RoleEnum.valueOf(user.getRole().getName().toUpperCase());
+        if (role != RoleEnum.ADMIN) {
+            throw new IdInvalidException("Chỉ ADMIN mới có quyền cập nhật trạng thái đơn hàng");
+        }
+
+        // 2. Validate status
+        StatusEnum statusEnum;
+        try {
+            statusEnum = StatusEnum.valueOf(newStatus.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IdInvalidException("Trạng thái không hợp lệ: " + newStatus);
+        }
+
+        // 3. Lấy order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IdInvalidException("Order ID " + orderId + " không tồn tại"));
+
+        StatusEnum oldStatus = order.getStatus();
+
+        // 4. Validate business logic theo flow
+        validateStatusTransition(oldStatus, statusEnum);
+
+        // 5. Nếu chuyển sang CANCELLED → hoàn lại stock
+        if (statusEnum == StatusEnum.CANCELLED && oldStatus != StatusEnum.CANCELLED) {
+            order.getOrderItems().forEach(item -> {
+                productService.increaseStock(item.getProduct(), item.getQuantity());
+            });
+        }
+
+        // 6. Cập nhật status
+        order.setStatus(statusEnum);
+        orderRepository.save(order);
+
+        return convertToDTO(order);
+    }
+
+    /**
+     * Validate business logic khi chuyển status
+     */
+    private void validateStatusTransition(StatusEnum oldStatus, StatusEnum newStatus) {
+        // Nếu đã CANCELLED hoặc DELIVERED → không cho phép thay đổi
+        if (oldStatus == StatusEnum.CANCELLED) {
+            throw new IdInvalidException("Không thể thay đổi trạng thái của đơn hàng đã hủy");
+        }
+        if (oldStatus == StatusEnum.DELIVERED) {
+            throw new IdInvalidException("Không thể thay đổi trạng thái của đơn hàng đã giao");
+        }
+
+        // Flow chuẩn: PENDING → CONFIRMED → SHIPPING → SHIPPED → DELIVERED
+        // Hoặc có thể CANCEL ở bất kỳ bước nào
+        // Không cho phép quay lại trạng thái trước đó (trừ CANCELLED)
+        if (newStatus != StatusEnum.CANCELLED) {
+            int oldOrder = getStatusOrder(oldStatus);
+            int newOrder = getStatusOrder(newStatus);
+            if (newOrder <= oldOrder) {
+                throw new IdInvalidException(
+                    "Không thể chuyển từ " + oldStatus + " sang " + newStatus);
+            }
+        }
+    }
+
+    /**
+     * Helper để xác định thứ tự status
+     */
+    private int getStatusOrder(StatusEnum status) {
+        switch (status) {
+            case PENDING: return 1;
+            case CONFIRMED: return 2;
+            case SHIPPING: return 3;
+            case SHIPPED: return 4;
+            case DELIVERED: return 5;
+            case CANCELLED: return 0; // Special case
+            default: return -1;
+        }
+    }
 }
