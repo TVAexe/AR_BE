@@ -14,6 +14,8 @@ import com.example.AR_BE.domain.response.FetchUserDTOResponse;
 import com.example.AR_BE.domain.response.NewUserDTOResponse;
 import com.example.AR_BE.domain.response.ResultPaginationDTO;
 import com.example.AR_BE.domain.response.UpdateUserDTOResponse;
+import com.example.AR_BE.domain.response.UserListDTOResponse;
+import com.example.AR_BE.repository.RoleRepository;
 import com.example.AR_BE.repository.UserRepository;
 
 import java.util.List;
@@ -25,11 +27,14 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
-    public UserService(UserRepository userRepository, RoleService roleService, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, RoleService roleService, 
+                      PasswordEncoder passwordEncoder, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.roleService = roleService;
         this.passwordEncoder = passwordEncoder;
+        this.roleRepository = roleRepository;
 
     }
 
@@ -42,6 +47,18 @@ public class UserService {
                 user.setRole(null);
             }
         }
+        return userRepository.save(user);
+    }
+
+    // ✅ Method mới: Tạo user với role USER mặc định (dùng cho register)
+    public User handleCreateUserWithDefaultRole(User user) {
+        // Tìm role USER từ database
+        Role userRole = roleRepository.findByName("USER")
+                .orElseThrow(() -> new RuntimeException("Role USER not found. Please run database seeder."));
+        
+        // Gán role USER cho user
+        user.setRole(userRole);
+        
         return userRepository.save(user);
     }
 
@@ -128,20 +145,45 @@ public class UserService {
         return currentUser;
     }
 
-    public ResultPaginationDTO handleGetAllUsers(Specification<User> spec, Pageable pageable) {
-        Page<User> pageUser = this.userRepository.findAll(spec, pageable);
-        ResultPaginationDTO result = new ResultPaginationDTO();
+    public ResultPaginationDTO handleGetAllUsers(Specification<User> specification, Pageable pageable) {
+        Page<User> pageUser = this.userRepository.findAll(specification, pageable);
+        ResultPaginationDTO rs = new ResultPaginationDTO();
         ResultPaginationDTO.Meta meta = new ResultPaginationDTO.Meta();
+
         meta.setPage(pageable.getPageNumber() + 1);
         meta.setPageSize(pageable.getPageSize());
         meta.setPages(pageUser.getTotalPages());
         meta.setTotal(pageUser.getTotalElements());
-        result.setMeta(meta);
-        List<FetchUserDTOResponse> fetchUserDTOs = pageUser.getContent().stream()
-    .map(item -> this.convertFetchUserDTO(item))
-    .collect(Collectors.toList());
-        result.setResult(fetchUserDTOs);
-        return result;
+
+        rs.setMeta(meta);
+
+        // Convert to UserListDTOResponse
+        List<UserListDTOResponse> userList = pageUser.getContent().stream()
+            .map(this::convertToUserListDTO)
+            .collect(Collectors.toList());
+        rs.setResult(userList);
+        return rs;
+    }
+
+    public UserListDTOResponse convertToUserListDTO(User user) {
+        UserListDTOResponse dto = new UserListDTOResponse();
+        dto.setId(user.getId());
+        dto.setName(user.getName());
+        dto.setEmail(user.getEmail());
+        dto.setPhoneNumber(user.getPhoneNumber());
+        dto.setAge(user.getAge());
+        dto.setGender(user.getGender() != null ? user.getGender().name() : null);
+        dto.setCreatedAt(user.getCreatedAt());
+        dto.setCreatedBy(user.getCreatedBy());
+        
+        if (user.getRole() != null) {
+            UserListDTOResponse.RoleResponse roleResponse = new UserListDTOResponse.RoleResponse();
+            roleResponse.setId(user.getRole().getId());
+            roleResponse.setName(user.getRole().getName());
+            dto.setRole(roleResponse);
+        }
+        
+        return dto;
     }
 
     public FetchUserDTOResponse convertFetchUserDTO(User user) {
