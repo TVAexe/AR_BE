@@ -55,3 +55,8 @@ tasks.withType<Test> {
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-parameters")
 }
+
+// Disable plain JAR (only keep executable JAR)
+tasks.jar {
+	enabled = false
+}
