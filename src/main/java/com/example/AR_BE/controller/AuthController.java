@@ -91,7 +91,7 @@ public class AuthController {
 
         String hashedPassword = this.passwordEncoder.encode(requestUser.getPassword());
         requestUser.setPassword(hashedPassword);
-        User newUser = this.userService.handleCreateUser(requestUser);
+        User newUser = this.userService.handleCreateUserWithDefaultRole(requestUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(this.userService.convertToNewUserDTOResponse(newUser));
     }
 
