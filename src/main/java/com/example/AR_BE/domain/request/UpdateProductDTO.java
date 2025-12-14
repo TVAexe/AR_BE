@@ -11,5 +11,6 @@ public class UpdateProductDTO {
     private Integer quantity;
     private String description;
     private List<String> imageUrl;
+    private String modelUrl;
     private Long categoryId;
 }

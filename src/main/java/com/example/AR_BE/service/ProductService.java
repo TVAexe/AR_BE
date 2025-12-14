@@ -2,8 +2,10 @@ package com.example.AR_BE.service;
 
 import com.example.AR_BE.domain.Category;
 import com.example.AR_BE.domain.Product;
+import com.example.AR_BE.domain.ProductARModel;
 import com.example.AR_BE.domain.dto.CategoryDTO;
 import com.example.AR_BE.domain.dto.ProductDTO;
+import com.example.AR_BE.domain.dto.ProductARModelDTO;
 import com.example.AR_BE.domain.request.CreateProductDTO;
 import com.example.AR_BE.domain.request.UpdateProductDTO;
 import com.example.AR_BE.repository.CategoryRepository;
@@ -109,6 +111,23 @@ public class ProductService {
             }
         }
         p.setImageUrl(urls);
+
+        if (req.getModelFile() != null) {
+            MultipartFile file = req.getModelFile();
+            try {
+                String fileName = fileService.uploadFile(file);
+                String modelUrl = fileService.getFileUrl(fileName);
+
+                ProductARModel arModel = new ProductARModel();
+                arModel.setGlbUrl(modelUrl);
+                arModel.setProduct(p);
+                p.setArModel(arModel);
+
+            } catch (Exception e) {
+                throw new RuntimeException("Fail to upload 3D model" + e.getMessage());
+            }
+        }
+
         p.setCategory(category);
 
         productRepo.save(p);
@@ -140,6 +159,18 @@ public class ProductService {
             p.setCategory(category);
         }
 
+        if (req.getModelUrl() != null && !req.getModelUrl().isBlank()) {
+            ProductARModel arModel = p.getArModel();
+
+            if (arModel == null) {
+                arModel = new ProductARModel();
+                arModel.setProduct(p);
+                p.setArModel(arModel);
+            }
+
+            arModel.setGlbUrl(req.getModelUrl());
+        }
+
         productRepo.save(p);
         return toDTO(p);
     }
@@ -162,6 +193,18 @@ public class ProductService {
                 }
             }
         }
+
+        ProductARModel arModel = p.getArModel();
+        if (arModel != null && arModel.getGlbUrl() != null) {
+            String modelUrl = arModel.getGlbUrl();
+            if (!modelUrl.isEmpty()) {
+                try {
+                    fileService.deleteFile(modelUrl);
+                } catch (Exception e) {
+                    System.err.println("Failed to delete model from S3: " + modelUrl + " - " + e.getMessage());
+                }
+            }
+        }
     }
 
     // Convert Entity -> DTO
@@ -169,6 +212,20 @@ public class ProductService {
         CategoryDTO categoryDTO = new CategoryDTO(
                 p.getCategory().getId(),
                 p.getCategory().getName());
+
+        ProductARModelDTO arDto = null;
+        if (p.getArModel() != null) {
+            ProductARModel m = p.getArModel();
+            arDto = new ProductARModelDTO(
+                    m.getId(),
+                    m.getGlbUrl(),
+                    m.getScaleX(),
+                    m.getScaleY(),
+                    m.getScaleZ(),
+                    m.getRotationY(),
+                    m.getIsArEnabled()
+            );
+        }
 
         return new ProductDTO(
                 p.getId(),
@@ -182,6 +239,7 @@ public class ProductService {
                 p.getCreatedBy(),
                 p.getUpdatedBy(),
                 p.getImageUrl(),
+                arDto,
                 categoryDTO);
     }
 

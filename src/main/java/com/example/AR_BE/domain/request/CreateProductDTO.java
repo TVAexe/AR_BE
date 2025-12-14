@@ -25,6 +25,8 @@ public class CreateProductDTO {
 
     private MultipartFile[] images;
 
+    private MultipartFile modelFile;
+
     @NotNull(message = "Category không được để trống")
     private Long categoryId;
 }
