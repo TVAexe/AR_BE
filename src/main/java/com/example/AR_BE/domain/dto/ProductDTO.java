@@ -1,5 +1,6 @@
 package com.example.AR_BE.domain.dto;
 
+import com.example.AR_BE.domain.ProductARModel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,5 +23,6 @@ public class ProductDTO {
     private String createdBy;
     private String updatedBy;
     private List<String> imageUrl;
+    private ProductARModelDTO arModel;
     private CategoryDTO category;
 }
