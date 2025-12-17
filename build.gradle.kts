@@ -46,6 +46,7 @@ dependencies {
     implementation("software.amazon.awssdk:s3:2.21.29")
     implementation("software.amazon.awssdk:auth:2.21.29")
     implementation("software.amazon.awssdk:regions:2.21.29")
+    implementation("me.paulschwarz:spring-dotenv:4.0.0")
 }
 
 tasks.withType<Test> {
@@ -54,4 +55,9 @@ tasks.withType<Test> {
 
 tasks.withType<JavaCompile> {
     options.compilerArgs.add("-parameters")
+}
+
+// Disable plain JAR (only keep executable JAR)
+tasks.jar {
+	enabled = false
 }
